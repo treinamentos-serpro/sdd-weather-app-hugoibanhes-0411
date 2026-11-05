@@ -9,6 +9,7 @@ import {
 describe('temperature', () => {
   it('converte Celsius para Fahrenheit corretamente', () => {
     expect(toFahrenheit(0)).toBe(32);
+    expect(toFahrenheit(20)).toBe(68);
     expect(toFahrenheit(100)).toBe(212);
     expect(toFahrenheit(-40)).toBe(-40);
   });
@@ -20,6 +21,7 @@ describe('temperature', () => {
 
   it('formata com símbolo de grau e arredondamento', () => {
     expect(formatTemperature(20.4, 'celsius')).toBe('20°');
+    expect(formatTemperature(20, 'fahrenheit')).toBe('68°');
     expect(formatTemperature(0, 'fahrenheit')).toBe('32°');
   });
 

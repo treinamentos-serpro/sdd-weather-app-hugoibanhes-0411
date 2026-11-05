@@ -14,6 +14,7 @@ const geocoding = {
 };
 
 const forecast = {
+  timezone: 'America/Los_Angeles',
   current: {
     time: '2026-06-16T12:00',
     temperature_2m: 0,
@@ -28,7 +29,8 @@ const forecast = {
     weather_code: [3, 61, 80, 1, 0],
     temperature_2m_max: [20, 19, 22, 24, 25],
     temperature_2m_min: [12, 11, 13, 14, 15],
-    precipitation_probability_max: [20, 90, 70, 10, 0],
+    precipitation_sum: [0, 0.2, 1.5, 4, 0],
+    wind_speed_10m_max: [12, 14, 10, 20, 8],
   },
 };
 

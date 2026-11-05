@@ -16,7 +16,7 @@ import EmptyState from './components/states/EmptyState';
  * Copilot, do briefing à entrega.
  */
 export default function App() {
-  const { status, data, error, query, search, retry } = useWeather();
+  const { status, data, error, query, search, retry, retrySection } = useWeather();
   const [unit, setUnit] = useState<Unit>('celsius');
 
   return (
@@ -57,8 +57,26 @@ export default function App() {
 
         {status === 'success' && data && (
           <>
-            <CurrentWeather city={data.city} current={data.current} unit={unit} />
-            <ForecastList forecast={data.forecast} unit={unit} />
+            {data.current.status === 'success' && data.current.data && (
+              <CurrentWeather city={data.city} current={data.current.data} unit={unit} />
+            )}
+            {data.current.status === 'loading' && <LoadingState />}
+            {data.current.status === 'error' && (
+              <ErrorState
+                message={data.current.error ?? 'Não foi possível carregar o clima atual.'}
+                onRetry={() => retrySection('current')}
+              />
+            )}
+            {data.forecast.status === 'success' && data.forecast.data && (
+              <ForecastList forecast={data.forecast.data} unit={unit} />
+            )}
+            {data.forecast.status === 'loading' && <LoadingState />}
+            {data.forecast.status === 'error' && (
+              <ErrorState
+                message={data.forecast.error ?? 'Não foi possível carregar a previsão.'}
+                onRetry={() => retrySection('forecast')}
+              />
+            )}
           </>
         )}
       </main>

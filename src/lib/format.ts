@@ -3,20 +3,6 @@
  */
 
 const WEEKDAYS = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
-const MONTHS = [
-  'Jan',
-  'Fev',
-  'Mar',
-  'Abr',
-  'Mai',
-  'Jun',
-  'Jul',
-  'Ago',
-  'Set',
-  'Out',
-  'Nov',
-  'Dez',
-];
 
 /** Faz parse de uma data ISO (YYYY-MM-DD) como data local, sem fuso. */
 function parseLocalDate(iso: string): Date {
@@ -37,8 +23,10 @@ export function getDayLabel(iso: string, index: number): string {
   return WEEKDAYS[date.getDay()];
 }
 
-/** Formata a data como "12 Jun". */
+/** Formata a data local como "DD/MM/AAAA". */
 export function getShortDate(iso: string): string {
   const date = parseLocalDate(iso);
-  return `${date.getDate()} ${MONTHS[date.getMonth()]}`;
+  const day = String(date.getDate()).padStart(2, '0');
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  return `${day}/${month}/${date.getFullYear()}`;
 }

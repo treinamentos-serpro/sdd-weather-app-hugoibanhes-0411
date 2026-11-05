@@ -4,7 +4,7 @@ import { describe, it, expect } from 'vitest';
 import { useState } from 'react';
 import UnitToggle from '../../src/components/UnitToggle';
 import CurrentWeather from '../../src/components/CurrentWeather';
-import type { City, CurrentWeather as CurrentWeatherType, Unit } from '../../src/types/weather';
+import type { City, CurrentWeather as CurrentWeatherData, Unit } from '../../src/types/weather';
 
 const city: City = {
   id: 1,
@@ -15,14 +15,14 @@ const city: City = {
   longitude: -122.33,
 };
 
-const current: CurrentWeatherType = {
+const current: CurrentWeatherData = {
   time: '2026-06-16T12:00',
-  temperature: 0, // 0°C => 32°F (fácil de verificar)
-  humidity: 80,
-  windSpeed: 10,
-  pressure: 1015,
-  precipitation: 0,
+  temperatureC: 0, // 0°C => 32°F (fácil de verificar)
   weatherCode: 3,
+  humidityPercent: 80,
+  windSpeedKmh: 10,
+  pressureHpa: 1015,
+  precipitationMm: 0,
 };
 
 function Harness() {

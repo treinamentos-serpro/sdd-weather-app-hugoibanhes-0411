@@ -12,7 +12,8 @@ describe('format', () => {
     expect(getDayLabel('2026-06-18', 2)).toBe('Qui');
   });
 
-  it('formata data curta', () => {
-    expect(getShortDate('2026-06-16')).toBe('16 Jun');
+  it('formata a data local com dia e mês preenchidos', () => {
+    expect(getShortDate('2026-06-16')).toBe('16/06/2026');
+    expect(getShortDate('2026-06-03')).toBe('03/06/2026');
   });
 });
