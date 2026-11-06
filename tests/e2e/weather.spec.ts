@@ -301,6 +301,58 @@ for (const width of [320, 375]) {
   });
 }
 
+for (const width of [320, 375, 1280, 1920]) {
+  test(`T-44 layout sem corte ou sobreposição em ${width}px`, async ({ page }) => {
+    await mockGeocoding(page, () => [LISBON]);
+    await mockForecast(page);
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto('/');
+
+    await submitSearch(page, 'Lisboa');
+    await chooseCity(page, LISBON);
+
+    const searchInput = page.getByRole('textbox', { name: 'Buscar cidade' });
+    const unitToggle = page.getByRole('group', { name: 'Unidade de temperatura' });
+    const currentSection = page.getByRole('region', { name: 'Clima atual' });
+    const forecastSection = page.getByRole('region', { name: 'Previsão de 5 dias' });
+    await expect(currentSection).toBeVisible();
+    await expect(forecastSection.getByRole('listitem')).toHaveCount(5);
+
+    const fitsViewport = await page.evaluate(
+      () => document.documentElement.scrollWidth <= document.documentElement.clientWidth,
+    );
+    expect(fitsViewport).toBe(true);
+
+    for (const locator of [
+      searchInput,
+      page.getByRole('button', { name: 'Buscar' }),
+      unitToggle,
+      currentSection,
+      forecastSection,
+    ]) {
+      const box = await locator.boundingBox();
+      expect(box).not.toBeNull();
+      expect(box?.x).toBeGreaterThanOrEqual(0);
+      expect((box?.x ?? 0) + (box?.width ?? 0)).toBeLessThanOrEqual(width);
+    }
+
+    const controlsOverlap = await page.evaluate(() => {
+      const search = document.querySelector<HTMLElement>('#city-search');
+      const unit = document.querySelector<HTMLElement>('[aria-label="Unidade de temperatura"]');
+      if (!search || !unit) return true;
+      const searchRect = search.getBoundingClientRect();
+      const unitRect = unit.getBoundingClientRect();
+      return (
+        searchRect.left < unitRect.right &&
+        searchRect.right > unitRect.left &&
+        searchRect.top < unitRect.bottom &&
+        searchRect.bottom > unitRect.top
+      );
+    });
+    expect(controlsOverlap).toBe(false);
+  });
+}
+
 test('T-41 navega por teclado, seleciona cidade, usa retry/unidade e mantém foco visível', async ({
   page,
 }) => {
