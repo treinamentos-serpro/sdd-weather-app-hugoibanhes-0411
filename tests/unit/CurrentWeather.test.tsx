@@ -35,6 +35,21 @@ describe('CurrentWeather', () => {
     expect(screen.getByText('Não disponível')).toBeInTheDocument();
   });
 
+  it('apresenta fallback para cada métrica ausente', () => {
+    const emptyCurrent = {
+      ...CURRENT,
+      temperatureC: null,
+      weatherCode: null,
+      humidityPercent: null,
+      windSpeedKmh: null,
+      pressureHpa: null,
+      precipitationMm: null,
+    };
+    render(<CurrentWeather city={CITY} current={emptyCurrent} unit="celsius" />);
+
+    expect(screen.getAllByText('Não disponível')).toHaveLength(6);
+  });
+
   it('apresenta estado de carregamento', () => {
     render(<CurrentWeather city={CITY} unit="celsius" status="loading" />);
     expect(screen.getByRole('status')).toHaveTextContent('Carregando clima atual');

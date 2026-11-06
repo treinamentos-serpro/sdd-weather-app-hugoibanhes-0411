@@ -18,9 +18,15 @@ describe('ForecastList', () => {
   it('renderiza os cinco dias em ordem cronológica', () => {
     render(<ForecastList forecast={FORECAST} unit="celsius" />);
 
-    expect(screen.getAllByRole('listitem')).toHaveLength(5);
-    expect(screen.getByText('16/06/2026')).toBeInTheDocument();
-    expect(screen.getByText('20/06/2026')).toBeInTheDocument();
+    const items = screen.getAllByRole('listitem');
+    expect(items).toHaveLength(5);
+    for (const [index, item] of items.entries()) {
+      expect(item).toHaveTextContent(`2026`);
+      expect(item).toHaveTextContent(`${index}°`);
+      expect(item).toHaveTextContent(`${index + 10}°`);
+    }
+    expect(items[0]).toHaveTextContent('16/06/2026');
+    expect(items[4]).toHaveTextContent('20/06/2026');
   });
 
   it('apresenta loading sem perder o nome da seção', () => {

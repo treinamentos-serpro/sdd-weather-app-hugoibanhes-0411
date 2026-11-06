@@ -1,7 +1,7 @@
 import { act, renderHook } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { getWeather, searchCities } from '../../src/services/weatherService';
-import type { City } from '../../src/types/weather';
+import type { City, ForecastDay, WeatherData } from '../../src/types/weather';
 import { useWeather } from '../../src/hooks/useWeather';
 
 vi.mock('../../src/services/weatherService', () => ({
@@ -27,6 +27,37 @@ const PORTO: City = {
   latitude: 41.15,
   longitude: -8.61,
 };
+
+const FORECAST: ForecastDay[] = Array.from({ length: 5 }, (_, index) => ({
+  date: `2026-06-${String(16 + index).padStart(2, '0')}`,
+  available: true,
+  weatherCode: 0,
+  minTemperatureC: 10,
+  maxTemperatureC: 20,
+  precipitationMm: 0,
+  windSpeedMaxKmh: 0,
+}));
+
+function weatherForCity(city: City): WeatherData {
+  return {
+    city,
+    timezone: 'Europe/Lisbon',
+    current: {
+      status: 'success',
+      data: {
+        time: '2026-06-16T12:00',
+        temperatureC: 20,
+        weatherCode: 0,
+        humidityPercent: 70,
+        windSpeedKmh: 8,
+        pressureHpa: 1014,
+        precipitationMm: 0,
+      },
+      error: null,
+    },
+    forecast: { status: 'success', data: FORECAST, error: null },
+  };
+}
 
 function deferred<T>() {
   let resolve: (value: T) => void = () => {};
@@ -117,5 +148,85 @@ describe('useWeather search lifecycle', () => {
     expect(result.current.error).toBeNull();
     expect(result.current.cities).toEqual([LISBON]);
     expect(getWeather).not.toHaveBeenCalled();
+  });
+});
+
+describe('useWeather weather orchestration', () => {
+  beforeEach(() => {
+    vi.resetAllMocks();
+  });
+
+  it('carrega o clima para as coordenadas da cidade selecionada', async () => {
+    vi.mocked(getWeather).mockImplementation(async (city) => weatherForCity(city));
+    const { result } = renderHook(() => useWeather());
+
+    await act(async () => {
+      await result.current.selectCity(PORTO);
+    });
+
+    expect(getWeather).toHaveBeenCalledWith(PORTO);
+    expect(result.current.status).toBe('success');
+    expect(result.current.data?.city).toEqual(PORTO);
+    expect(result.current.data?.current.status).toBe('success');
+    expect(result.current.data?.forecast.status).toBe('success');
+  });
+
+  it('ignora respostas de uma cidade anterior que chegam atrasadas', async () => {
+    const lisbonRequest = deferred<WeatherData>();
+    const portoRequest = deferred<WeatherData>();
+    vi.mocked(getWeather).mockImplementation((city) =>
+      city.id === LISBON.id ? lisbonRequest.promise : portoRequest.promise,
+    );
+    const { result } = renderHook(() => useWeather());
+    let lisbonSelection: Promise<void> = Promise.resolve();
+    let portoSelection: Promise<void> = Promise.resolve();
+
+    act(() => {
+      lisbonSelection = result.current.selectCity(LISBON);
+      portoSelection = result.current.selectCity(PORTO);
+    });
+
+    await act(async () => {
+      portoRequest.resolve(weatherForCity(PORTO));
+      await portoSelection;
+    });
+    await act(async () => {
+      lisbonRequest.resolve(weatherForCity(LISBON));
+      await lisbonSelection;
+    });
+
+    expect(getWeather).toHaveBeenNthCalledWith(1, LISBON);
+    expect(getWeather).toHaveBeenNthCalledWith(2, PORTO);
+    expect(result.current.data?.city).toEqual(PORTO);
+  });
+
+  it('repete somente forecast e preserva current válido', async () => {
+    const partial = weatherForCity(LISBON);
+    partial.forecast = {
+      status: 'error',
+      data: null,
+      error: 'Não foi possível carregar a previsão.',
+    };
+    const forecastRetry = weatherForCity(LISBON);
+    forecastRetry.current = { status: 'idle', data: null, error: null };
+    vi.mocked(getWeather)
+      .mockResolvedValueOnce(partial)
+      .mockResolvedValueOnce(forecastRetry);
+    const { result } = renderHook(() => useWeather());
+
+    await act(async () => {
+      await result.current.selectCity(LISBON);
+    });
+    const currentBeforeRetry = result.current.data?.current;
+
+    await act(async () => {
+      await result.current.retrySection('forecast');
+    });
+
+    expect(getWeather).toHaveBeenNthCalledWith(1, LISBON);
+    expect(getWeather).toHaveBeenNthCalledWith(2, LISBON, 'forecast');
+    expect(result.current.data?.current).toBe(currentBeforeRetry);
+    expect(result.current.data?.forecast.status).toBe('success');
+    expect(result.current.data?.forecast.data).toHaveLength(5);
   });
 });

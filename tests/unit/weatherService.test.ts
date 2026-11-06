@@ -61,6 +61,20 @@ describe('weatherService', () => {
       expect(result[0].name).toBe('Seattle');
     });
 
+    it('codifica o nome completo e envia parâmetros de busca em pt-BR', async () => {
+      const fetchSpy = mockFetchOnce({ results: [] });
+      vi.stubGlobal('fetch', fetchSpy);
+
+      await searchCities("São-João d'Ávila");
+
+      const requestUrl = new URL(String(fetchSpy.mock.calls[0]?.[0]));
+      expect(requestUrl.searchParams.get('name')).toBe("São-João d'Ávila");
+      expect(requestUrl.searchParams.get('count')).toBe('5');
+      expect(requestUrl.searchParams.get('language')).toBe('pt');
+      expect(requestUrl.searchParams.get('format')).toBe('json');
+      expect(requestUrl.search).toContain('%C3%A3');
+    });
+
     it('normaliza país e região ausentes como null', async () => {
       vi.stubGlobal(
         'fetch',
@@ -81,6 +95,12 @@ describe('weatherService', () => {
 
     it('lança erro tipado em resposta não-ok', async () => {
       vi.stubGlobal('fetch', mockFetchOnce({}, false));
+      await expect(searchCities('Seattle')).rejects.toBeInstanceOf(WeatherServiceError);
+    });
+
+    it('lança erro tipado em falha de transporte', async () => {
+      vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new TypeError('network failure')));
+
       await expect(searchCities('Seattle')).rejects.toBeInstanceOf(WeatherServiceError);
     });
 
@@ -210,6 +230,80 @@ describe('weatherService', () => {
       expect(data.forecast.status).toBe('error');
     });
 
+    it('preserva null e zero em métricas atuais e diárias', async () => {
+      vi.stubGlobal(
+        'fetch',
+        mockFetchOnce({
+          timezone: 'Europe/Lisbon',
+          current: { precipitation: 0 },
+          daily: {
+            time: response.daily.time,
+            weather_code: [null, null, null, null, null],
+            temperature_2m_min: [0, null, null, null, null],
+            temperature_2m_max: [0, null, null, null, null],
+            precipitation_sum: [0, null, null, null, null],
+            wind_speed_10m_max: [0, null, null, null, null],
+          },
+        }),
+      );
+
+      const data = await getWeather(CITY);
+
+      expect(data.current).toMatchObject({
+        status: 'success',
+        data: {
+          temperatureC: null,
+          weatherCode: null,
+          humidityPercent: null,
+          windSpeedKmh: null,
+          pressureHpa: null,
+          precipitationMm: 0,
+        },
+      });
+      expect(data.forecast.data?.[0]).toMatchObject({
+        available: true,
+        minTemperatureC: 0,
+        maxTemperatureC: 0,
+        precipitationMm: 0,
+        windSpeedMaxKmh: 0,
+      });
+      expect(data.forecast.data?.[1]).toMatchObject({ available: false, minTemperatureC: null });
+    });
+
+    it('marca a previsão como erro quando há número diferente de cinco datas', async () => {
+      vi.stubGlobal(
+        'fetch',
+        mockFetchOnce({
+          ...response,
+          daily: { ...response.daily, time: response.daily.time.slice(0, 4) },
+        }),
+      );
+
+      const data = await getWeather(CITY);
+
+      expect(data.current.status).toBe('success');
+      expect(data.forecast.status).toBe('error');
+    });
+
+    it('lança erro tipado em HTTP, falha de rede e JSON inválido', async () => {
+      vi.stubGlobal('fetch', mockFetchOnce({}, false));
+      await expect(getWeather(CITY)).rejects.toBeInstanceOf(WeatherServiceError);
+
+      vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new TypeError('network failure')));
+      await expect(getWeather(CITY)).rejects.toBeInstanceOf(WeatherServiceError);
+
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue({
+          ok: true,
+          json: async () => {
+            throw new SyntaxError('invalid json');
+          },
+        } as unknown as Response),
+      );
+      await expect(getWeather(CITY)).rejects.toBeInstanceOf(WeatherServiceError);
+    });
+
     it('solicita somente a seção indicada para retry', async () => {
       const fetchSpy = mockFetchOnce({ timezone: 'Europe/Lisbon', daily: response.daily });
       vi.stubGlobal('fetch', fetchSpy);
@@ -221,6 +315,19 @@ describe('weatherService', () => {
       expect(requestUrl.searchParams.has('daily')).toBe(true);
       expect(data.current.status).toBe('idle');
       expect(data.forecast.status).toBe('success');
+    });
+
+    it('solicita somente current quando a seção atual é repetida', async () => {
+      const fetchSpy = mockFetchOnce({ timezone: 'Europe/Lisbon', current: response.current });
+      vi.stubGlobal('fetch', fetchSpy);
+
+      const data = await getWeather(CITY, 'current');
+      const requestUrl = new URL(String(fetchSpy.mock.calls[0]?.[0]));
+
+      expect(requestUrl.searchParams.has('current')).toBe(true);
+      expect(requestUrl.searchParams.has('daily')).toBe(false);
+      expect(data.current.status).toBe('success');
+      expect(data.forecast.status).toBe('idle');
     });
   });
 });
