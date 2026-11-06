@@ -92,13 +92,13 @@ export function useWeather(): UseWeatherResult {
       }
 
       setCities(results);
-      await loadWeather(results[0]);
+      setStatus('success');
     } catch (err) {
       if (requestId !== searchRequestId.current) return;
       setStatus('error');
       setError(toMessage(err));
     }
-  }, [loadWeather]);
+  }, []);
 
   const selectCity = useCallback(
     async (city: City) => {

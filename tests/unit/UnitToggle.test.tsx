@@ -40,12 +40,25 @@ describe('UnitToggle + CurrentWeather', () => {
     render(<Harness />);
     expect(screen.getByText('0°')).toBeInTheDocument();
 
-    await userEvent.click(screen.getByRole('button', { name: '°F' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Fahrenheit' }));
     expect(screen.getByText('32°')).toBeInTheDocument();
   });
 
   it('expõe os botões com estado pressionado acessível', () => {
     render(<Harness />);
-    expect(screen.getByRole('button', { name: '°C' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('button', { name: 'Celsius' })).toHaveAttribute('aria-pressed', 'true');
+  });
+
+  it('permite alternar unidades pelo teclado', async () => {
+    render(<Harness />);
+    await userEvent.tab();
+    await userEvent.tab();
+    await userEvent.keyboard('{Enter}');
+
+    expect(screen.getByRole('button', { name: 'Fahrenheit' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+    expect(screen.getByText('32°')).toBeInTheDocument();
   });
 });

@@ -33,6 +33,9 @@ export default function ForecastCard({ day, index, unit }: ForecastCardProps) {
         {day.weatherCode === null ? '🌡️' : getWeatherIcon(day.weatherCode)}
       </span>
       <p className="text-sm">
+        {day.weatherCode === null ? 'Não disponível' : getWeatherLabel(day.weatherCode)}
+      </p>
+      <p className="text-sm">
         <span className="font-semibold">
           {day.maxTemperatureC === null ? 'Não disponível' : formatTemperature(day.maxTemperatureC, unit)}
         </span>{' '}

@@ -50,6 +50,7 @@ export default function App() {
           <EmptyState
             title={`Nenhuma cidade encontrada para "${query}"`}
             hint="Verifique a grafia e tente novamente."
+            role="status"
           />
         )}
 

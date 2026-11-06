@@ -1,12 +1,25 @@
 import type { City, CurrentWeather as CurrentWeatherData, Unit } from '../types/weather';
 import { formatTemperature } from '../lib/temperature';
 import { getWeatherIcon, getWeatherLabel } from '../lib/weatherCodes';
+import LoadingState from './states/LoadingState';
+import ErrorState from './states/ErrorState';
 
-interface CurrentWeatherProps {
+interface CurrentWeatherBaseProps {
   city: City;
-  current: CurrentWeatherData;
   unit: Unit;
 }
+
+type CurrentWeatherProps =
+  | (CurrentWeatherBaseProps & {
+      status?: 'success';
+      current: CurrentWeatherData;
+    })
+  | (CurrentWeatherBaseProps & { status: 'loading' })
+  | (CurrentWeatherBaseProps & {
+      status: 'error';
+      error: string;
+      onRetry: () => void;
+    });
 
 interface MetricProps {
   icon: string;
@@ -29,7 +42,24 @@ function Metric({ icon, label, value }: MetricProps) {
 }
 
 /** Seção "hero" com as condições atuais da cidade selecionada. */
-export default function CurrentWeather({ city, current, unit }: CurrentWeatherProps) {
+export default function CurrentWeather(props: CurrentWeatherProps) {
+  if (props.status === 'loading') {
+    return (
+      <section aria-label="Clima atual">
+        <LoadingState message="Carregando clima atual" />
+      </section>
+    );
+  }
+
+  if (props.status === 'error') {
+    return (
+      <section aria-label="Clima atual">
+        <ErrorState message={props.error} onRetry={props.onRetry} />
+      </section>
+    );
+  }
+
+  const { city, current, unit } = props;
   const location = [city.admin1, city.country].filter(Boolean).join(', ');
 
   return (
@@ -54,7 +84,7 @@ export default function CurrentWeather({ city, current, unit }: CurrentWeatherPr
           </div>
           <p className="mt-2 text-white/70">
             {current.weatherCode === null
-              ? 'Condição não disponível'
+              ? 'Não disponível'
               : getWeatherLabel(current.weatherCode)}
           </p>
         </div>

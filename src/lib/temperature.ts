@@ -5,6 +5,11 @@ export function toFahrenheit(celsius: number): number {
   return celsius * (9 / 5) + 32;
 }
 
+/** Converte uma temperatura em Fahrenheit para Celsius. */
+export function toCelsius(fahrenheit: number): number {
+  return (fahrenheit - 32) * (5 / 9);
+}
+
 /**
  * Converte um valor em Celsius para a unidade desejada, sem arredondar.
  * Mantém a função pura e testável.

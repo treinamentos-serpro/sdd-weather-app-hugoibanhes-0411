@@ -12,5 +12,15 @@
     "editor.defaultFormatter": "biomejs.biome"
   },
   "files.eol": "\n",
-  "chat.promptFiles": true
+  "chat.promptFiles": true,
+  "chat.tools.terminal.autoApprove": {
+    "/^pnpm exec vitest run tests/unit/SearchBar\\.test\\.tsx tests/unit/UnitToggle\\.test\\.tsx tests/unit/App\\.test\\.tsx$/": {
+      "approve": true,
+      "matchCommandLine": true
+    },
+    "/^pnpm exec vitest run tests/unit/SearchBar\\.test\\.tsx tests/unit/CityResults\\.test\\.tsx tests/unit/CurrentWeather\\.test\\.tsx tests/unit/ForecastCard\\.test\\.tsx tests/unit/ForecastList\\.test\\.tsx tests/unit/States\\.test\\.tsx tests/unit/UnitToggle\\.test\\.tsx$/": {
+      "approve": true,
+      "matchCommandLine": true
+    }
+  }
 }
